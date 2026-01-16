@@ -6,7 +6,7 @@ deepspeed llava/train/train_mem.py \
     --version plain \
     --data_path /nas_train/app.e0031982/datasets/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
     --image_folder /nas_train/app.e0031982/datasets/LLaVA-Pretrain \
-    --vision_tower /nas_train/app.e0031982/models/google/siglip2-so400m-patch16-384 \
+    --vision_tower /nas_train/app.e0031982/models/openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --tune_mm_mlp_adapter True \
     --mm_vision_select_layer -2 \
@@ -31,4 +31,4 @@ deepspeed llava/train/train_mem.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
-    --report_to wandb
+    --report_to tensorboard
