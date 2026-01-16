@@ -850,12 +850,9 @@ def train(attn_implementation=None):
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=training_args.gradient_checkpointing)
 
     if training_args.gradient_checkpointing:
-        if hasattr(model, "enable_input_require_grads"):
-            model.enable_input_require_grads()
-        else:
-            def make_inputs_require_grad(module, input, output):
-                output.requires_grad_(True)
-            model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
+        model.gradient_checkpointing_enable()  # 使用PyTorch原生API
+        model.config.use_cache = False
+        model.enable_input_require_grads()  # 新版本peft已内置此功能
 
     if training_args.lora_enable:
         from peft import LoraConfig, get_peft_model

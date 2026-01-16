@@ -11,7 +11,7 @@ from transformers.trainer import (
     has_length,
     logger,
 )
-from transformers.trainer_utils import ALL_LAYERNORM_LAYERS
+from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
 from typing import List, Optional
 
 
