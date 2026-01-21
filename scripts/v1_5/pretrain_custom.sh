@@ -1,8 +1,12 @@
 #!/bin/bash
 
+LANGUAGE_MODEL="/nas_train/app.e0031982/models/Qwen/Qwen3-4B-Instruct-2507"
+OUTPUT_DIR_BASE="llava-qwen3-4b"
+OUTPUT_DIR_PT="./checkpoints/${OUTPUT_DIR_BASE}.pretrain/"
+
 deepspeed llava/train/train_mem.py \
     --deepspeed ./scripts/zero2.json \
-    --model_name_or_path /nas_train/app.e0031982/models/Qwen/Qwen3-4B-Instruct-2507 \
+    --model_name_or_path ${LANGUAGE_MODEL} \
     --version plain \
     --data_path /nas_train/app.e0031982/datasets/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
     --image_folder /nas_train/app.e0031982/datasets/LLaVA-Pretrain \
@@ -13,7 +17,7 @@ deepspeed llava/train/train_mem.py \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --bf16 True \
-    --output_dir ./checkpoints/llava-qwen3-4b-pretrain \
+    --output_dir "${OUTPUT_DIR_PT}" \
     --num_train_epochs 1 \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 4 \
@@ -21,7 +25,7 @@ deepspeed llava/train/train_mem.py \
     --save_strategy "steps" \
     --save_steps 24000 \
     --save_total_limit 1 \
-    --learning_rate 1e-3 \
+    --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
@@ -31,4 +35,5 @@ deepspeed llava/train/train_mem.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
-    --report_to tensorboard
+    --report_to tensorboard \
+    --logging_dir "./runs/${OUTPUT_DIR_BASE}.pretrain/"
