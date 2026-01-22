@@ -700,7 +700,27 @@ class LazySupervisedDataset(Dataset):
         super(LazySupervisedDataset, self).__init__()
         list_data_dict = json.load(open(data_path, "r"))
 
-        rank0_print("Formatting inputs...Skip in lazy mode")
+        # 过滤掉损坏的图片文件
+        if data_args.image_folder:
+            filtered_list = []
+            for item in list_data_dict:
+                if 'image' in item:
+                    image_file = item['image']
+                    image_path = os.path.join(data_args.image_folder, image_file)
+                    try:
+                        # 尝试打开和验证图片
+                        with Image.open(image_path) as img:
+                            img.verify()
+                        filtered_list.append(item)
+                    except (OSError, IOError, Image.UnidentifiedImageError) as e:
+                        logging.warning(f"Skipping corrupted image: {image_file}, error: {e}")
+                else:
+                    filtered_list.append(item)
+            list_data_dict = filtered_list
+            rank0_print(f"Filtered dataset: {len(filtered_list)}/{len(list_data_dict)} samples after removing corrupted images")
+        else:
+            rank0_print("Formatting inputs...Skip in lazy mode")
+        
         self.tokenizer = tokenizer
         self.list_data_dict = list_data_dict
         self.data_args = data_args
@@ -730,28 +750,48 @@ class LazySupervisedDataset(Dataset):
         if isinstance(i, int):
             sources = [sources]
         assert len(sources) == 1, "Don't know why it is wrapped to a list"  # FIXME
+        
+        image = None
         if 'image' in sources[0]:
             image_file = self.list_data_dict[i]['image']
             image_folder = self.data_args.image_folder
             processor = self.data_args.image_processor
-            image = Image.open(os.path.join(image_folder, image_file)).convert('RGB')
-            if self.data_args.image_aspect_ratio == 'pad':
-                def expand2square(pil_img, background_color):
-                    width, height = pil_img.size
-                    if width == height:
-                        return pil_img
-                    elif width > height:
-                        result = Image.new(pil_img.mode, (width, width), background_color)
-                        result.paste(pil_img, (0, (width - height) // 2))
-                        return result
+            
+            # 尝试加载图片，如果失败则跳过该样本
+            try:
+                img_path = os.path.join(image_folder, image_file)
+                with Image.open(img_path) as img:
+                    # 验证图片是否完整
+                    img.verify()
+                    # 重新打开图片进行转换
+                    img = Image.open(img_path)
+                    image = img.convert('RGB')
+                    
+                    if self.data_args.image_aspect_ratio == 'pad':
+                        def expand2square(pil_img, background_color):
+                            width, height = pil_img.size
+                            if width == height:
+                                return pil_img
+                            elif width > height:
+                                result = Image.new(pil_img.mode, (width, width), background_color)
+                                result.paste(pil_img, (0, (width - height) // 2))
+                                return result
+                            else:
+                                result = Image.new(pil_img.mode, (height, height), background_color)
+                                result.paste(pil_img, ((height - width) // 2, 0))
+                                return result
+                        image = expand2square(image, tuple(int(x*255) for x in processor.image_mean))
+                        image = processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
                     else:
-                        result = Image.new(pil_img.mode, (height, height), background_color)
-                        result.paste(pil_img, ((height - width) // 2, 0))
-                        return result
-                image = expand2square(image, tuple(int(x*255) for x in processor.image_mean))
-                image = processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
-            else:
-                image = processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+                        image = processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+                        
+            except (OSError, IOError, Image.UnidentifiedImageError) as e:
+                # 图片文件损坏或无法读取，记录警告并返回空图片
+                logging.warning(f"Failed to load image {image_file}: {e}. Skipping this sample.")
+                # 创建空白图片作为替代
+                crop_size = processor.crop_size if hasattr(processor, 'crop_size') else {'height': 336, 'width': 336}
+                image = torch.zeros(3, crop_size['height'], crop_size['width'])
+                
             sources = preprocess_multimodal(
                 copy.deepcopy([e["conversations"] for e in sources]),
                 self.data_args)
