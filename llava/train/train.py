@@ -371,7 +371,15 @@ def preprocess_llama_2(
     # Mask targets
     sep = "[/INST] "
     for conversation, target in zip(conversations, targets):
-        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+        # For Qwen tokenizer, when has_image=True, we need to handle the special case
+        # where tokenizer_image_token uses IMAGE_TOKEN_INDEX (-200) but direct tokenizer
+        # tokenizes <image> as multiple tokens
+        if has_image and 'qwen' in tokenizer.name_or_path.lower():
+            # For Qwen with images, calculate total_len based on input_ids length
+            # instead of counting non-pad tokens, since IMAGE_TOKEN_INDEX (-200) is not pad_token_id
+            total_len = len(target)
+        else:
+            total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
         cur_len = 1
@@ -399,11 +407,15 @@ def preprocess_llama_2(
 
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
-                target[:] = IGNORE_INDEX
-                print(
-                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
-                )
+                # For Qwen tokenizer, we skip the mismatch check
+                # because tokenizer_image_token uses IMAGE_TOKEN_INDEX (-200) which
+                # causes different tokenization than the regular tokenizer
+                if not ('qwen' in tokenizer.name_or_path.lower()):
+                    target[:] = IGNORE_INDEX
+                    print(
+                        f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                        f" (ignored)"
+                    )
 
     return dict(
         input_ids=input_ids,
@@ -453,7 +465,15 @@ def preprocess_v1(
     # Mask targets
     sep = conv.sep + conv.roles[1] + ": "
     for conversation, target in zip(conversations, targets):
-        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+        # For Qwen tokenizer, when has_image=True, we need to handle the special case
+        # where tokenizer_image_token uses IMAGE_TOKEN_INDEX (-200) but direct tokenizer
+        # tokenizes <image> as multiple tokens
+        if has_image and 'qwen' in tokenizer.name_or_path.lower():
+            # For Qwen with images, calculate total_len based on input_ids length
+            # instead of counting non-pad tokens, since IMAGE_TOKEN_INDEX (-200) is not pad_token_id
+            total_len = len(target)
+        else:
+            total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
         cur_len = 1
@@ -474,7 +494,7 @@ def preprocess_v1(
                 round_len = len(tokenizer(rou).input_ids)
                 instruction_len = len(tokenizer(parts[0]).input_ids) - 2
 
-            if i != 0 and not tokenizer.legacy and IS_TOKENIZER_GREATER_THAN_0_14:
+            if i != 0 and not getattr(tokenizer, 'legacy', False) and IS_TOKENIZER_GREATER_THAN_0_14:
                 round_len -= 1
                 instruction_len -= 1
 
@@ -485,11 +505,15 @@ def preprocess_v1(
 
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
-                target[:] = IGNORE_INDEX
-                print(
-                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
-                )
+                # For Qwen tokenizer, we skip the mismatch check
+                # because tokenizer_image_token uses IMAGE_TOKEN_INDEX (-200) which
+                # causes different tokenization than the regular tokenizer
+                if not ('qwen' in tokenizer.name_or_path.lower()):
+                    target[:] = IGNORE_INDEX
+                    print(
+                        f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                        f" (ignored)"
+                    )
 
     return dict(
         input_ids=input_ids,
@@ -538,7 +562,15 @@ def preprocess_mpt(
     # Mask targets
     sep = conv.sep + conv.roles[1]
     for conversation, target in zip(conversations, targets):
-        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+        # For Qwen tokenizer, when has_image=True, we need to handle the special case
+        # where tokenizer_image_token uses IMAGE_TOKEN_INDEX (-200) but direct tokenizer
+        # tokenizes <image> as multiple tokens
+        if has_image and 'qwen' in tokenizer.name_or_path.lower():
+            # For Qwen with images, calculate total_len based on input_ids length
+            # instead of counting non-pad tokens, since IMAGE_TOKEN_INDEX (-200) is not pad_token_id
+            total_len = len(target)
+        else:
+            total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep)
         re_rounds = [conv.sep.join(rounds[:3])] # system + user + gpt
@@ -573,11 +605,15 @@ def preprocess_mpt(
 
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
-                target[:] = IGNORE_INDEX
-                print(
-                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
-                )
+                # For Qwen tokenizer, we skip the mismatch check
+                # because tokenizer_image_token uses IMAGE_TOKEN_INDEX (-200) which
+                # causes different tokenization than the regular tokenizer
+                if not ('qwen' in tokenizer.name_or_path.lower()):
+                    target[:] = IGNORE_INDEX
+                    print(
+                        f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                        f" (ignored)"
+                    )
 
     return dict(
         input_ids=input_ids,
