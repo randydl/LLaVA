@@ -1,13 +1,17 @@
 #!/bin/bash
 
+LANGUAGE_MODEL="/nas_train/app.e0031982/models/Qwen/Qwen3-4B-Instruct-2507"
+OUTPUT_DIR_BASE="llava-qwen3-4b"
+OUTPUT_DIR_PT="./checkpoints/${OUTPUT_DIR_BASE}/"
+
 deepspeed llava/train/train_mem.py \
     --deepspeed ./scripts/zero3.json \
-    --model_name_or_path /nas_train/app.e0031982/models/Qwen/Qwen3-4B-Instruct-2507 \
+    --model_name_or_path ${LANGUAGE_MODEL} \
     --version v1 \
     --data_path /nas_train/app.e0031982/datasets/LLaVA-Instruct-150K/llava_v1_5_mix665k.json \
     --image_folder ./playground/data \
-    --vision_tower /nas_train/app.e0031982/models/google/siglip2-so400m-patch16-384 \
-    --pretrain_mm_mlp_adapter ./checkpoints/llava-qwen3-4b-pretrain/mm_projector.bin \
+    --vision_tower /nas_train/app.e0031982/models/openai/clip-vit-large-patch14-336 \
+    --pretrain_mm_mlp_adapter ./checkpoints/${OUTPUT_DIR_BASE}.pretrain/mm_projector.bin \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
@@ -15,12 +19,11 @@ deepspeed llava/train/train_mem.py \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir ./checkpoints/llava-qwen3-4b \
+    --output_dir "${OUTPUT_DIR_PT}" \
     --num_train_epochs 1 \
     --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
-    --evaluation_strategy "no" \
     --save_strategy "steps" \
     --save_steps 50000 \
     --save_total_limit 1 \
@@ -34,4 +37,5 @@ deepspeed llava/train/train_mem.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
-    --report_to wandb
+    --report_to tensorboard \
+    --logging_dir "./runs/${OUTPUT_DIR_BASE}/"
