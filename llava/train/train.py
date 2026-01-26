@@ -915,6 +915,24 @@ def train(attn_implementation=None):
             torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
             **bnb_model_from_pretrained_args
         )
+    
+    # 修复generation_config验证问题：如果temperature或top_p被设置，确保do_sample=True
+    if hasattr(model, 'generation_config') and model.generation_config is not None:
+        generation_config = model.generation_config
+        if (getattr(generation_config, 'temperature', None) is not None or 
+            getattr(generation_config, 'top_p', None) is not None):
+            if not getattr(generation_config, 'do_sample', False):
+                generation_config.do_sample = True
+                print(f"已修复generation_config: 设置do_sample=True")
+    elif hasattr(model, 'config') and hasattr(model.config, 'generation_config'):
+        generation_config = model.config.generation_config
+        if generation_config is not None:
+            if (getattr(generation_config, 'temperature', None) is not None or 
+                getattr(generation_config, 'top_p', None) is not None):
+                if not getattr(generation_config, 'do_sample', False):
+                    generation_config.do_sample = True
+                    print(f"已修复generation_config: 设置do_sample=True")
+    
     model.config.use_cache = False
 
     if model_args.freeze_backbone:
