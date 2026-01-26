@@ -1,12 +1,16 @@
 #!/bin/bash
 
+LANGUAGE_MODEL="/nas_train/app.e0031982/models/Qwen/Qwen3-4B-Instruct-2507"
+OUTPUT_DIR_BASE="llava-v1.5-13b"
+OUTPUT_DIR_PT="./checkpoints/${OUTPUT_DIR_BASE}.pretrain/"
+
 deepspeed llava/train/train_mem.py \
     --deepspeed ./scripts/zero2.json \
-    --model_name_or_path lmsys/vicuna-13b-v1.5 \
+    --model_name_or_path ${LANGUAGE_MODEL} \
     --version plain \
-    --data_path ./playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
-    --image_folder ./playground/data/LLaVA-Pretrain/images \
-    --vision_tower openai/clip-vit-large-patch14-336 \
+    --data_path /nas_train/app.e0031982/datasets/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
+    --image_folder /nas_train/app.e0031982/datasets/LLaVA-Pretrain \
+    --vision_tower /nas_train/app.e0031982/models/openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --tune_mm_mlp_adapter True \
     --mm_vision_select_layer -2 \
@@ -32,4 +36,5 @@ deepspeed llava/train/train_mem.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
-    --report_to wandb
+    --report_to tensorboard \
+    --logging_dir "./runs/${OUTPUT_DIR_BASE}.pretrain/"

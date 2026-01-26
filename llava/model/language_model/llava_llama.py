@@ -63,6 +63,8 @@ class LlavaLlamaForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         inputs_embeds: Optional[torch.FloatTensor] = None,
         labels: Optional[torch.LongTensor] = None,
         use_cache: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        logits_to_keep: Union[int, torch.Tensor] = 0,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         images: Optional[torch.FloatTensor] = None,
@@ -96,6 +98,8 @@ class LlavaLlamaForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             inputs_embeds=inputs_embeds,
             labels=labels,
             use_cache=use_cache,
+            cache_position=cache_position,
+            logits_to_keep=logits_to_keep,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict
