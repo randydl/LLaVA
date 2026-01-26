@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LANGUAGE_MODEL="/nas_train/app.e0031982/models/Qwen/Qwen3-4B-Instruct-2507"
+LANGUAGE_MODEL="/nas_train/app.e0031982/models/lmsys/vicuna-13b-v1.5"
 OUTPUT_DIR_BASE="llava-v1.5-13b"
 OUTPUT_DIR_PT="./checkpoints/${OUTPUT_DIR_BASE}.pretrain/"
 
