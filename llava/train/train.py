@@ -997,6 +997,7 @@ def train(attn_implementation=None):
             model_max_length=training_args.model_max_length,
             padding_side="right",
             use_fast=False,
+            trust_remote_code=True,
         )
 
     if model_args.version == "v0":
