@@ -376,7 +376,7 @@ conv_qwen3 = Conversation(
     messages=(),
     offset=0,
     sep_style=SeparatorStyle.MPT,
-    sep="<|im_end|>\n",
+    sep="<|im_end|>",
 )
 
 default_conversation = conv_vicuna_v1
